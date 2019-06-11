@@ -7,16 +7,16 @@ declare -a args
 
 device="brother4:bus8;dev1"
 output=scan.pdf
-USEARRAY=0
-APPEND=0
-RESOLUTION=300
-MODE=Lineart
-SCRIPT="$dir/scan_perpage"
+usearray=0
+append=0
+resolution=300
+mode=Lineart
+script="$dir/scan_perpage"
 duplex=0
-UNPAPER=0
-SEARCHABLE=0
-LANGUAGE=eng
-MAXPAGE=
+unpaper=0
+searchable=0
+language=eng
+maxpage=
 TRUNCPAGE=0
 HELP=0
 size=A4
@@ -52,13 +52,13 @@ while [ $# -gt 0 ]; do
 
   -d|--duplex) duplex=1 ;;
 
-  -m|--mode) shift; MODE=$1 ;;
+  -m|--mode) shift; mode=$1 ;;
 
-  -r|--resolution) shift; RESOLUTION=$1 ;;
+  -r|--resolution) shift; resolution=$1 ;;
 
-  -a|--append) APPEND=1 ;;
+  -a|--append) append=1 ;;
 
-  -e|--max) shift; MAXPAGE=$1 ;;
+  -e|--max) shift; maxpage=$1 ;;
 
   -t|--truncate) shift; TRUNCPAGE=$1 ;;
 
@@ -74,21 +74,21 @@ while [ $# -gt 0 ]; do
 
   --deskew) DESKEW=1 ;;
 
-  --unpaper) UNPAPER=1 ;;
+  --unpaper) unpaper=1 ;;
 
-  --searchable|--ocr) SEARCHABLE=1 ;;
+  --searchable|--ocr) searchable=1 ;;
 
-  --language) shift; LANGUAGE=$1 ;;
+  --language) shift; language=$1 ;;
 
   --skip-empty-pages) SKIP_EMPTY_PAGES=1 ;;
 
   -o|--output) shift; output="$1" ;;
 
-  -l|--outputlist) shift; USEARRAY=1; output=(); output+=("$1") ;;
+  -l|--outputlist) shift; usearray=1; output=(); output+=("$1") ;;
 
   -x|--device) shift; device=$1;;
 
-  *) if [ $USEARRAY = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
+  *) if [ $usearray = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
 
   esac
   shift   # next option
@@ -141,12 +141,12 @@ if [ $HELP -eq 1 ]; then
   exit 0
 fi
 
-if [ $USEARRAY = 0 -a -f "$output" -a ! $APPEND = 1 ]; then
+if [ $usearray = 0 -a -f "$output" -a ! $append = 1 ]; then
   echo >&2 "Output file $output already exists. Delete or specify -a. Aborting."
   exit 1
 fi
 
-if [ $USEARRAY = 1 -a ! $APPEND = 1 ]; then
+if [ $usearray = 1 -a ! $append = 1 ]; then
   for o in "${output[@]}"; do
     if [ -f "$o" ]; then
       echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
@@ -161,8 +161,8 @@ if [ $duplex -eq 1 ]; then
 
 fi
 
-if [ "$MAXPAGE" != "" ]; then
-  MAXPAGE="-e $MAXPAGE"
+if [ "$maxpage" != "" ]; then
+  maxpage="-e $maxpage"
 fi
 
 PS2PDF_OPTS=
@@ -204,10 +204,10 @@ if [ $DESKEW = 1 ]; then
 fi
 
 export VERBOSE
-export UNPAPER
-export SEARCHABLE
-export LANGUAGE
-export RESOLUTION
+export unpaper
+export searchable
+export language
+export resolution
 export pgwidthin
 export pgheightin
 export PS2PDF_OPTS
@@ -222,11 +222,11 @@ fi;
 debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
 
 echo >&2 "Scanning..."
-args+=('-d' "$device" '--source' "$source" "$MAXPAGE" "$PGHEIGHT" "$PGWIDTH" '-S' "$SCRIPT" '--script-wait' '--resolution' "$RESOLUTION" "$DESKEW" "$crop" -o "$tmp_dir/scan-%04d")
+args+=('-d' "$device" '--source' "$source" "$maxpage" "$PGHEIGHT" "$PGWIDTH" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$DESKEW" "$crop" -o "$tmp_dir/scan-%04d")
 
-debug scanadf "${args[@]}"
+scanadf "${args[@]}"
 
-#debug scanadf -d "$device" $source $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop -o $tmp_dir/scan-%04d
+#debug scanadf -d "$device" $source $maxpage $PGHEIGHT $PGWIDTH -S $script --script-wait --resolution $resolution $DESKEW $crop -o $tmp_dir/scan-%04d
 
 
 
@@ -240,7 +240,7 @@ if [ $numscans -gt 0 ]; then
     pdffiles=(${pdffiles[@]:0:$numscans-$TRUNCPAGE})
     echo "Truncated $TRUNCPAGE pages"
   fi
-  if [ $numscans -gt 1 -a $USEARRAY = 1 ]; then
+  if [ $numscans -gt 1 -a $usearray = 1 ]; then
     echo "Naming pdfs based on output list..."
     output_count=${#output[@]}
     index=0
@@ -248,7 +248,7 @@ if [ $numscans -gt 0 ]; then
       let "scanno = $index + 1"
       if [ -f "${output[$index]}" ]; then
         mv "${output[$index]}" "${output[$index]}.orig"
-        if [ $APPEND -eq 1 ]; then
+        if [ $append -eq 1 ]; then
           pdffiles=()
           if [ -f "${output[$index]}.orig" ]; then
             pdffiles+=("${output[$index]}.orig")
@@ -263,7 +263,7 @@ if [ $numscans -gt 0 ]; then
       fi
       let "index = $index + 1"
     done
-  elif [ $numscans -gt 1 -o $APPEND -eq 1 ]; then
+  elif [ $numscans -gt 1 -o $append -eq 1 ]; then
     echo "Concatenating pdfs..."
     if [ -f "$output" ]; then
       mv "$output" "${output}.orig"
@@ -275,7 +275,7 @@ if [ $numscans -gt 0 ]; then
     pdffiles+=($tmp_dir/scan-[0-9]*.pdf)
     pdfunite "${pdffiles[@]}" "$output" && rm $tmp_dir/scan-[0-9]*.pdf
   else
-    if [ $USEARRAY = 1 ]; then
+    if [ $usearray = 1 ]; then
       mv $tmp_dir/scan-0*.pdf "${output[0]}"
     else
       mv $tmp_dir/scan-0*.pdf "$output"

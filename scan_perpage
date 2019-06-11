@@ -7,10 +7,10 @@ usage()
 {
   echo "Usage: $0 <imagefile>"
   echo "Set the following environment variables:"
-  echo "  UNPAPER"
-  echo "  SEARCHABLE"
-  echo "  LANGUAGE"
-  echo "  RESOLUTION"
+  echo "  unpaper"
+  echo "  searchable"
+  echo "  language"
+  echo "  resolution"
   echo "  PGWIDTHIN"
   echo "  PGHEIGHTIN"
   echo "  SKIP_EMPTY_PAGES"
@@ -40,7 +40,7 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-if [ "$UNPAPER" == "" -o "$SEARCHABLE" == "" -o "$RESOLUTION" == "" -o "$RESOLUTION" == "" -o "$SKIP_EMPTY_PAGES" == "" ]; then
+if [ "$unpaper" == "" -o "$searchable" == "" -o "$resolution" == "" -o "$resolution" == "" -o "$SKIP_EMPTY_PAGES" == "" ]; then
   usage
   exit 1
 fi
@@ -52,7 +52,7 @@ IMAGE_FILE=$(basename $1)
 process_page() {
   log ""
   log "-------------------------------------------------------------------------------"
-  log "Post-processing scanned page ${IMAGE_FILE}, deskew=$UNPAPER, searchable=$SEARCHABLE..."
+  log "Post-processing scanned page ${IMAGE_FILE}, deskew=$unpaper, searchable=$searchable..."
 
   
   [[ $SKIP_EMPTY_PAGES -eq 1 ]] && PERCENTAGE_WHITE=$(convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || PERCENTAGE_WHITE=0
@@ -60,20 +60,20 @@ process_page() {
     
   PP_PREFIX=
   if (( $(echo "$PERCENTAGE_WHITE < 99.8" |bc -l) )); then
-    if [ $UNPAPER -eq 1 ]; then
+    if [ $unpaper -eq 1 ]; then
       log "Applying unpaper post-processing to image data..."
       PP_PREFIX="unpaper-"
       if [ $VERBOSE = 1 ]; then
-        UNPAPERVERBOSE="-v"
+        unpaperverbose="-v"
       fi
-      #unpaper $UNPAPERVERBOSE --no-mask-scan --overwrite --dpi $RESOLUTION --no-blackfilter $IMAGE_FILE $PP_PREFIX$IMAGE_FILE | logstdout
-      unpaper $UNPAPERVERBOSE --overwrite --dpi $RESOLUTION $IMAGE_PATH $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | logstdout
+      #unpaper $unpaperVERBOSE --no-mask-scan --overwrite --dpi $resolution --no-blackfilter $IMAGE_FILE $PP_PREFIX$IMAGE_FILE | logstdout
+      unpaper $unpaperverbose --overwrite --dpi $resolution $IMAGE_PATH $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | logstdout
     fi
     log ""
     log "-------------------------------------------------------------------------------"
-    if [ $SEARCHABLE -eq 1 ]; then
+    if [ $searchable -eq 1 ]; then
       log "Converting image data to searchable pdf..."
-      tesseract $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE $IMAGE_DIR/${IMAGE_FILE%.*} -l $LANGUAGE pdf | logstdout
+      tesseract $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE $IMAGE_DIR/${IMAGE_FILE%.*} -l $language pdf | logstdout
     else
       log "Converting image data to pdf..."
       PNMVERBOSE=
@@ -81,7 +81,7 @@ process_page() {
         PNMVERBOSE="-verbose"
       fi
       if [ "$PGWIDTHIN" == "" -o "$PGHEIGHTIN" == "" ]; then
-        PAGEOPTS="-equalpixels -dpi=$RESOLUTION -noturn"
+        PAGEOPTS="-equalpixels -dpi=$resolution -noturn"
       else
         PAGEOPTS="-imagewidth $PGWIDTHIN -imageheight $PGHEIGHTIN"
       fi
