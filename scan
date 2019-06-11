@@ -1,14 +1,14 @@
 #!/bin/bash
 
-DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-DEVICE=fujitsu
-OUTPUT=scan.pdf
+device="brother4:bus8;dev1"
+output=scan.pdf
 USEARRAY=0
 APPEND=0
 RESOLUTION=300
 MODE=Lineart
-SCRIPT="$DIR/scan_perpage"
+SCRIPT="$dir/scan_perpage"
 DUPLEX=0
 UNPAPER=0
 SEARCHABLE=0
@@ -16,18 +16,30 @@ LANGUAGE=eng
 MAXPAGE=
 TRUNCPAGE=0
 HELP=0
-SIZE=Letter
+size=A4
 PGHEIGHT=
 PGHEIGHTIN=
 PGWIDTH=
 PGWIDTHIN=
-CROP=0
+crop=0
 DESKEW=0
 VERBOSE=0
 SKIP_EMPTY_PAGES=0
 
-TMP_DIR=`mktemp -d`
-trap "rm -rf $TMP_DIR" 0
+
+i=0 tmp_dir=
+trap '[[ $tmp_dir ]] && rm -rf "$tmp_dir"' EXIT
+
+while ((++i <= 10)); do
+  tmp_dir=${TMPdir:-$HOME}/$RANDOM-$$
+  mkdir -m 700 "$tmp_dir" 2>/dev/null && break
+done
+
+if ((i > 10)); then
+  printf 'Could not create temporary directory\n' >&2
+  exit 1
+fi
+
 
 # Parse command-line options
 while [ $# -gt 0 ]; do
@@ -49,13 +61,13 @@ while [ $# -gt 0 ]; do
 
   -h|--help) HELP=1 ;;
 
-  -s|--size) shift; SIZE=$1 ;;
+  -s|--size) shift; size=$1 ;;
 
   -ph|--page-height) shift; PGHEIGHT=$1 ;;
 
   -pw|--page-width) shift; PGWIDTH=$1 ;;
 
-  --crop) CROP=1 ;;
+  --crop) crop=1 ;;
 
   --deskew) DESKEW=1 ;;
 
@@ -67,20 +79,20 @@ while [ $# -gt 0 ]; do
 
   --skip-empty-pages) SKIP_EMPTY_PAGES=1 ;;
 
-  -o|--output) shift; OUTPUT="$1" ;;
+  -o|--output) shift; output="$1" ;;
 
-  -l|--outputlist) shift; USEARRAY=1; OUTPUT=(); OUTPUT+=("$1") ;;
+  -l|--outputlist) shift; USEARRAY=1; output=(); output+=("$1") ;;
 
-  -x|--device) shift; DEVICE=$1;;
+  -x|--device) shift; device=$1;;
 
-  *) if [ $USEARRAY = 1 ]; then OUTPUT+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
+  *) if [ $USEARRAY = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
 
   esac
   shift   # next option
 done
 
 if [ $HELP -eq 1 ]; then
-  echo "$(basename $0) [OPTIONS]... [OUTPUT]"
+  echo "$(basename $0) [OPTIONS]... [output]"
   echo ""
   echo "OPTIONS"
   echo " -v, --verbose"
@@ -118,7 +130,7 @@ if [ $HELP -eq 1 ]; then
   echo " --skip-empty-pages"
   echo "   remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)"
   echo ""
-  echo "OUTPUT"
+  echo "output"
   echo " -o, --output <outputfile>"
   echo "   Output to named file default=scan.pdf"
   echo " -l, --outputlist <outputfile-1...outputfile-n> Output to named files for each scanned page, can be used with append"
@@ -126,13 +138,13 @@ if [ $HELP -eq 1 ]; then
   exit 0
 fi
 
-if [ $USEARRAY = 0 -a -f "$OUTPUT" -a ! $APPEND = 1 ]; then
-  echo >&2 "Output file $OUTPUT already exists. Delete or specify -a. Aborting."
+if [ $USEARRAY = 0 -a -f "$output" -a ! $APPEND = 1 ]; then
+  echo >&2 "Output file $output already exists. Delete or specify -a. Aborting."
   exit 1
 fi
 
 if [ $USEARRAY = 1 -a ! $APPEND = 1 ]; then
-  for o in "${OUTPUT[@]}"; do
+  for o in "${output[@]}"; do
     if [ -f "$o" ]; then
       echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
       exit 1
@@ -142,7 +154,7 @@ fi
 
 SOURCE=""
 if [ $DUPLEX -eq 1 ]; then
-  SOURCE="--source \"ADF Duplex\""
+  SOURCE='--source '"'"'Automatic Document Feeder(centrally aligned,Duplex)'"'"
 fi
 
 if [ "$MAXPAGE" != "" ]; then
@@ -152,7 +164,7 @@ fi
 PS2PDF_OPTS=
 
 # Specify non-letter sizes in mm
-case "$SIZE" in
+case "$size" in
 
   Letter) PGHEIGHTIN=11; PGWIDTHIN=8.5 ;;
 
@@ -162,20 +174,20 @@ case "$SIZE" in
 
 esac
 
-if [ $CROP != 1 -a "$PGHEIGHT" != "" ]; then
+if [ $crop != 1 -a "$PGHEIGHT" != "" ]; then
   PGHEIGHTIN=$(units --compact -1 "$PGHEIGHT mm" 'in')
-  PGHEIGHT="--page-height $PGHEIGHT -y $PGHEIGHT"
+  PGHEIGHT="-y $PGHEIGHT"
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
-if [ $CROP != 1 -a "$PGWIDTH" != "" ]; then
+if [ $crop != 1 -a "$PGWIDTH" != "" ]; then
   PGWIDTHIN=$(units --compact -1 "$PGWIDTH mm" 'in')
-  PGWIDTH="--page-width $PGWIDTH -x $PGWIDTH"
+  PGWIDTH="-x $PGWIDTH"
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
-if [ $CROP = 1 ]; then
-  CROP="--swcrop=yes"
+if [ $crop = 1 ]; then
+  crop="--swcrop=yes"
   PGHEIGHT=
   PGWIDTH=
   PGHEIGHTIN=
@@ -205,11 +217,13 @@ fi;
 
 
 echo >&2 "Scanning..."
-#eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $SOURCE -o scan-%04d
-eval scanadf -d "$DEVICE" $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $SOURCE -o $TMP_DIR/scan-%04d
+#eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $crop $SOURCE -o scan-%04d
+#eval scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
+echo scanadf -d brother4:bus8\;dev1 $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
+scanadf -d $device $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
 
 shopt -s extglob nullglob
-pdffiles=($TMP_DIR/scan-[0-9]*.pdf)
+pdffiles=($tmp_dir/scan-[0-9]*.pdf)
 numscans=${#pdffiles[@]}
 if [ $numscans -gt 0 ]; then
   echo "Processing $numscans pages"
@@ -220,43 +234,43 @@ if [ $numscans -gt 0 ]; then
   fi
   if [ $numscans -gt 1 -a $USEARRAY = 1 ]; then
     echo "Naming pdfs based on output list..."
-    output_count=${#OUTPUT[@]}
+    output_count=${#output[@]}
     index=0
     while [ "$index" -lt "$output_count" ]; do
       let "scanno = $index + 1"
-      if [ -f "${OUTPUT[$index]}" ]; then
-        mv "${OUTPUT[$index]}" "${OUTPUT[$index]}.orig"
+      if [ -f "${output[$index]}" ]; then
+        mv "${output[$index]}" "${output[$index]}.orig"
         if [ $APPEND -eq 1 ]; then
           pdffiles=()
-          if [ -f "${OUTPUT[$index]}.orig" ]; then
-            pdffiles+=("${OUTPUT[$index]}.orig")
+          if [ -f "${output[$index]}.orig" ]; then
+            pdffiles+=("${output[$index]}.orig")
           fi
-          pdffiles+=($TMP_DIR/scan-*(0)$scanno.pdf)
-          pdfunite "${pdffiles[@]}" "${OUTPUT[$index]}" && rm $TMP_DIR/scan-*(0)$scanno.pdf
+          pdffiles+=($tmp_dir/scan-*(0)$scanno.pdf)
+          pdfunite "${pdffiles[@]}" "${output[$index]}" && rm $tmp_dir/scan-*(0)$scanno.pdf
         else
-          mv $TMP_DIR/scan-*(0)$scanno.pdf "${OUTPUT[$index]}"
+          mv $tmp_dir/scan-*(0)$scanno.pdf "${output[$index]}"
         fi
       else
-        mv $TMP_DIR/scan-*(0)$scanno.pdf "${OUTPUT[$index]}"
+        mv $tmp_dir/scan-*(0)$scanno.pdf "${output[$index]}"
       fi
       let "index = $index + 1"
     done
   elif [ $numscans -gt 1 -o $APPEND -eq 1 ]; then
     echo "Concatenating pdfs..."
-    if [ -f "$OUTPUT" ]; then
-      mv "$OUTPUT" "${OUTPUT}.orig"
+    if [ -f "$output" ]; then
+      mv "$output" "${output}.orig"
     fi
     pdffiles=()
-    if [ -f "${OUTPUT}.orig" ]; then
-      pdffiles+=("${OUTPUT}.orig")
+    if [ -f "${output}.orig" ]; then
+      pdffiles+=("${output}.orig")
     fi
-    pdffiles+=($TMP_DIR/scan-[0-9]*.pdf)
-    pdfunite "${pdffiles[@]}" "$OUTPUT" && rm $TMP_DIR/scan-[0-9]*.pdf
+    pdffiles+=($tmp_dir/scan-[0-9]*.pdf)
+    pdfunite "${pdffiles[@]}" "$output" && rm $tmp_dir/scan-[0-9]*.pdf
   else
     if [ $USEARRAY = 1 ]; then
-      mv $TMP_DIR/scan-0*.pdf "${OUTPUT[0]}"
+      mv $tmp_dir/scan-0*.pdf "${output[0]}"
     else
-      mv $TMP_DIR/scan-0*.pdf "$OUTPUT"
+      mv $tmp_dir/scan-0*.pdf "$output"
     fi
   fi
   echo ""

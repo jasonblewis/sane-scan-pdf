@@ -46,8 +46,8 @@ if [ "$UNPAPER" == "" -o "$SEARCHABLE" == "" -o "$RESOLUTION" == "" -o "$RESOLUT
 fi
 
 IMAGE_PATH=$1
-IMAGE_DIR=`dirname $1`
-IMAGE_FILE=`basename $1`
+IMAGE_DIR=$(dirname $1)
+IMAGE_FILE=$(basename $1)
 
 process_page() {
   log ""
@@ -55,7 +55,7 @@ process_page() {
   log "Post-processing scanned page ${IMAGE_FILE}, deskew=$UNPAPER, searchable=$SEARCHABLE..."
 
   
-  [[ $SKIP_EMPTY_PAGES -eq 1 ]] && PERCENTAGE_WHITE=`convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:` || PERCENTAGE_WHITE=0
+  [[ $SKIP_EMPTY_PAGES -eq 1 ]] && PERCENTAGE_WHITE=$(convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || PERCENTAGE_WHITE=0
   log "$IMAGE_PATH has $PERCENTAGE_WHITE % white"
     
   PP_PREFIX=
