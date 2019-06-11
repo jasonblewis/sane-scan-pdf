@@ -6,7 +6,7 @@ dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 declare -a args
 
 device="brother4:bus8;dev1"
-output=scan.pdf
+output="scan-$(date --rfc-3339=seconds).pdf"
 usearray=0
 append=0
 resolution=300
@@ -28,6 +28,11 @@ crop=0
 DESKEW=0
 VERBOSE=0
 SKIP_EMPTY_PAGES=0
+
+if [[ -e "$dir/.sane-scan-pdf.conf" ]]; then source "$dir/.sane-scan-pdf.conf"
+    elif [[ -e /etc/sane-scan-pdf.conf ]]; then source /etc/sane-scan-pdf.conf
+fi
+
 
 
 i=0 tmp_dir=
