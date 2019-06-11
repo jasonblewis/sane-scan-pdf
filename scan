@@ -29,6 +29,7 @@ DESKEW=0
 VERBOSE=0
 SKIP_EMPTY_PAGES=0
 
+# read in config file and overwrite defaults
 if [[ -e "$dir/.sane-scan-pdf.conf" ]]; then source "$dir/.sane-scan-pdf.conf"
     elif [[ -e /etc/sane-scan-pdf.conf ]]; then source /etc/sane-scan-pdf.conf
 fi
@@ -85,6 +86,8 @@ while [ $# -gt 0 ]; do
 
   --language) shift; language=$1 ;;
 
+  --mail) shift; mail=$1 ;;
+  
   --skip-empty-pages) SKIP_EMPTY_PAGES=1 ;;
 
   -o|--output) shift; output="$1" ;;
@@ -134,9 +137,11 @@ if [ $HELP -eq 1 ]; then
   echo " --ocr"
   echo "   Run OCR to make the PDF searchable (requires tesseract)"
   echo " --language <lang>"
-  echo "   which language to use for OCR"
+  echo "   Which language to use for OCR"
   echo " --skip-empty-pages"
-  echo "   remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)"
+  echo "   Remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)"
+  echo " --mail <email-address>"
+  echo "   Mail PDF to recipient"
   echo ""
   echo "output"
   echo " -o, --output <outputfile>"
@@ -152,12 +157,12 @@ if [ $usearray = 0 -a -f "$output" -a ! $append = 1 ]; then
 fi
 
 if [ $usearray = 1 -a ! $append = 1 ]; then
-  for o in "${output[@]}"; do
-    if [ -f "$o" ]; then
-      echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
-      exit 1
-    fi
-  done
+    for o in "${output[@]}"; do
+        if [ -f "$o" ]; then
+            echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
+            exit 1
+        fi
+    done
 fi
 
 source=""
@@ -281,13 +286,18 @@ if [ $numscans -gt 0 ]; then
     pdfunite "${pdffiles[@]}" "$output" && rm $tmp_dir/scan-[0-9]*.pdf
   else
     if [ $usearray = 1 ]; then
-      mv $tmp_dir/scan-0*.pdf "${output[0]}"
+        mv $tmp_dir/scan-0*.pdf "${output[0]}"
     else
-      mv $tmp_dir/scan-0*.pdf "$output"
+        mv $tmp_dir/scan-0*.pdf "$output"
     fi
   fi
   echo ""
+  if ! [[ -z ${mail+x} ]] ; then
+      echo "emailing document $output to $mail"
+      echo '' | mutt -a "$output" -s "scanned document from $HOSTNAME " -- "$mail"
+      echo "mail result: $?"
+  fi
   echo "Done."
 else
-  echo "Found no scans."
+    echo "Found no scans."
 fi
