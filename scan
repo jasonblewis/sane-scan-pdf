@@ -2,6 +2,9 @@
 
 dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
+# declare an array to store arguments in
+declare -a args
+
 device="brother4:bus8;dev1"
 output=scan.pdf
 USEARRAY=0
@@ -9,7 +12,7 @@ APPEND=0
 RESOLUTION=300
 MODE=Lineart
 SCRIPT="$dir/scan_perpage"
-DUPLEX=0
+duplex=0
 UNPAPER=0
 SEARCHABLE=0
 LANGUAGE=eng
@@ -18,9 +21,9 @@ TRUNCPAGE=0
 HELP=0
 size=A4
 PGHEIGHT=
-PGHEIGHTIN=
+pgheightin=
 PGWIDTH=
-PGWIDTHIN=
+pgwidthin=
 crop=0
 DESKEW=0
 VERBOSE=0
@@ -47,7 +50,7 @@ while [ $# -gt 0 ]; do
 
   -v|--verbose) VERBOSE=1 ;;
 
-  -d|--duplex) DUPLEX=1 ;;
+  -d|--duplex) duplex=1 ;;
 
   -m|--mode) shift; MODE=$1 ;;
 
@@ -152,9 +155,10 @@ if [ $USEARRAY = 1 -a ! $APPEND = 1 ]; then
   done
 fi
 
-SOURCE=""
-if [ $DUPLEX -eq 1 ]; then
-  SOURCE='--source '"'"'Automatic Document Feeder(centrally aligned,Duplex)'"'"
+source=""
+if [ $duplex -eq 1 ]; then
+  source='Automatic Document Feeder(centrally aligned,Duplex)'
+
 fi
 
 if [ "$MAXPAGE" != "" ]; then
@@ -166,7 +170,7 @@ PS2PDF_OPTS=
 # Specify non-letter sizes in mm
 case "$size" in
 
-  Letter) PGHEIGHTIN=11; PGWIDTHIN=8.5 ;;
+  Letter) pgheightin=11; pgwidthin=8.5 ;;
 
   Legal) PGHEIGHT=355.6; PGWIDTH=215.9 ;;
 
@@ -175,13 +179,13 @@ case "$size" in
 esac
 
 if [ $crop != 1 -a "$PGHEIGHT" != "" ]; then
-  PGHEIGHTIN=$(units --compact -1 "$PGHEIGHT mm" 'in')
+  pgheightin=$(units --compact -1 "$PGHEIGHT mm" 'in')
   PGHEIGHT="-y $PGHEIGHT"
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
 if [ $crop != 1 -a "$PGWIDTH" != "" ]; then
-  PGWIDTHIN=$(units --compact -1 "$PGWIDTH mm" 'in')
+  pgwidthin=$(units --compact -1 "$PGWIDTH mm" 'in')
   PGWIDTH="-x $PGWIDTH"
   PS2PDF_OPTS="-dEPSCrop"
 fi
@@ -190,8 +194,8 @@ if [ $crop = 1 ]; then
   crop="--swcrop=yes"
   PGHEIGHT=
   PGWIDTH=
-  PGHEIGHTIN=
-  PGWIDTHIN=
+  pgheightin=
+  pgwidthin=
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
@@ -204,8 +208,8 @@ export UNPAPER
 export SEARCHABLE
 export LANGUAGE
 export RESOLUTION
-export PGWIDTHIN
-export PGHEIGHTIN
+export pgwidthin
+export pgheightin
 export PS2PDF_OPTS
 export SKIP_EMPTY_PAGES
 
@@ -215,12 +219,16 @@ if [ $VERBOSE = 1 ]; then
   export LOCKFILE
 fi;
 
+debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
 
 echo >&2 "Scanning..."
-#eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $crop $SOURCE -o scan-%04d
-#eval scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
-echo scanadf -d brother4:bus8\;dev1 $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
-scanadf -d $device $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop $SOURCE -o $tmp_dir/scan-%04d
+args+=('-d' "$device" '--source' "$source" "$MAXPAGE" "$PGHEIGHT" "$PGWIDTH" '-S' "$SCRIPT" '--script-wait' '--resolution' "$RESOLUTION" "$DESKEW" "$crop" -o "$tmp_dir/scan-%04d")
+
+debug scanadf "${args[@]}"
+
+#debug scanadf -d "$device" $source $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION $DESKEW $crop -o $tmp_dir/scan-%04d
+
+
 
 shopt -s extglob nullglob
 pdffiles=($tmp_dir/scan-[0-9]*.pdf)
