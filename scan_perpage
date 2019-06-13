@@ -11,24 +11,24 @@ usage()
   echo "  searchable"
   echo "  language"
   echo "  resolution"
-  echo "  PGWIDTHIN"
-  echo "  PGHEIGHTIN"
-  echo "  SKIP_EMPTY_PAGES"
+  echo "  pgwidthin"
+  echo "  pgheightin"
+  echo "  skip_empty_pages"
   echo "  PS2PDF_OPTS (optional)"
-  echo "  VERBOSE (optional)"
-  echo "  LOCKFILE (required if VERBOSE=1)"
+  echo "  verbose (optional)"
+  echo "  LOCKFILE (required if verbose=1)"
 }
 
 log()
 {
-  if [ $VERBOSE = 1 ]; then
+  if [ $verbose = 1 ]; then
     echo "scan_perpage: $1"
   fi
 }
 
 logstdout()
 {
-  if [ $VERBOSE = 1 ]; then
+  if [ $verbose = 1 ]; then
     cat
   else
     cat > /dev/null
@@ -40,7 +40,7 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-if [ "$unpaper" == "" -o "$searchable" == "" -o "$resolution" == "" -o "$resolution" == "" -o "$SKIP_EMPTY_PAGES" == "" ]; then
+if [ "$unpaper" == "" -o "$searchable" == "" -o "$resolution" == "" -o "$resolution" == "" -o "$skip_empty_pages" == "" ]; then
   usage
   exit 1
 fi
@@ -55,7 +55,7 @@ process_page() {
   log "Post-processing scanned page ${IMAGE_FILE}, deskew=$unpaper, searchable=$searchable..."
 
   
-  [[ $SKIP_EMPTY_PAGES -eq 1 ]] && PERCENTAGE_WHITE=$(convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || PERCENTAGE_WHITE=0
+  [[ $skip_empty_pages -eq 1 ]] && PERCENTAGE_WHITE=$(convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || PERCENTAGE_WHITE=0
   log "$IMAGE_PATH has $PERCENTAGE_WHITE % white"
     
   PP_PREFIX=
@@ -63,10 +63,10 @@ process_page() {
     if [ $unpaper -eq 1 ]; then
       log "Applying unpaper post-processing to image data..."
       PP_PREFIX="unpaper-"
-      if [ $VERBOSE = 1 ]; then
+      if [ $verbose = 1 ]; then
         unpaperverbose="-v"
       fi
-      #unpaper $unpaperVERBOSE --no-mask-scan --overwrite --dpi $resolution --no-blackfilter $IMAGE_FILE $PP_PREFIX$IMAGE_FILE | logstdout
+      #unpaper $unpaperverbose --no-mask-scan --overwrite --dpi $resolution --no-blackfilter $IMAGE_FILE $PP_PREFIX$IMAGE_FILE | logstdout
       unpaper $unpaperverbose --overwrite --dpi $resolution $IMAGE_PATH $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | logstdout
     fi
     log ""
@@ -76,17 +76,17 @@ process_page() {
       tesseract $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE $IMAGE_DIR/${IMAGE_FILE%.*} -l $language pdf | logstdout
     else
       log "Converting image data to pdf..."
-      PNMVERBOSE=
-      if [ $VERBOSE = 1 ]; then
-        PNMVERBOSE="-verbose"
+      PNMverbose=
+      if [ $verbose = 1 ]; then
+        PNMverbose="-verbose"
       fi
-      if [ "$PGWIDTHIN" == "" -o "$PGHEIGHTIN" == "" ]; then
+      if [ "$pgwidthin" == "" -o "$pgheightin" == "" ]; then
         PAGEOPTS="-equalpixels -dpi=$resolution -noturn"
       else
-        PAGEOPTS="-imagewidth $PGWIDTHIN -imageheight $PGHEIGHTIN"
+        PAGEOPTS="-imagewidth $pgwidthin -imageheight $pgheightin"
       fi
       log "Using page options: $PAGEOPTS"
-      pnmtops $PNMVERBOSE $PAGEOPTS $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | ps2pdf $PS2PDF_OPTS - > $IMAGE_DIR/${IMAGE_FILE%.*}.pdf | logstdout
+      pnmtops $PNMverbose $PAGEOPTS $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | ps2pdf $PS2PDF_OPTS - > $IMAGE_DIR/${IMAGE_FILE%.*}.pdf | logstdout
     fi    
   else
     log "Skipping empty page $IMAGE_FILE with white percentage $PERCENTAGE_WHITE"
@@ -102,7 +102,7 @@ process_page() {
   log "Scan processing done, status = $status"
 }
 
-if [ $VERBOSE = 1 ]; then
+if [ $verbose = 1 ]; then
   (
     flock 200
     process_page

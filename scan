@@ -17,19 +17,20 @@ unpaper=0
 searchable=0
 language=eng
 maxpage=
-TRUNCPAGE=0
-HELP=0
+truncpage=0
+help=0
 size=A4
-PGHEIGHT=
+pgheight=
 pgheightin=
-PGWIDTH=
+pgwidth=1
 pgwidthin=
 crop=0
-DESKEW=0
-VERBOSE=0
-SKIP_EMPTY_PAGES=0
+deskew=0
+verbose=0
+skip_empty_pages=0
 
 # read in config file and overwrite defaults
+
 if [[ -e "$dir/.sane-scan-pdf.conf" ]]; then source "$dir/.sane-scan-pdf.conf"
     elif [[ -e /etc/sane-scan-pdf.conf ]]; then source /etc/sane-scan-pdf.conf
 fi
@@ -54,7 +55,7 @@ fi
 while [ $# -gt 0 ]; do
   case "$1" in
 
-  -v|--verbose) VERBOSE=1 ;;
+  -v|--verbose) verbose=1 ;;
 
   -d|--duplex) duplex=1 ;;
 
@@ -66,19 +67,19 @@ while [ $# -gt 0 ]; do
 
   -e|--max) shift; maxpage=$1 ;;
 
-  -t|--truncate) shift; TRUNCPAGE=$1 ;;
+  -t|--truncate) shift; truncpage=$1 ;;
 
-  -h|--help) HELP=1 ;;
+  -h|--help) help=1 ;;
 
   -s|--size) shift; size=$1 ;;
 
-  -ph|--page-height) shift; PGHEIGHT=$1 ;;
+  -ph|--page-height) shift; pgheight=$1 ;;
 
-  -pw|--page-width) shift; PGWIDTH=$1 ;;
+  -pw|--page-width) shift; pgwidth=$1 ;;
 
   --crop) crop=1 ;;
 
-  --deskew) DESKEW=1 ;;
+  --deskew) deskew=1 ;;
 
   --unpaper) unpaper=1 ;;
 
@@ -88,7 +89,7 @@ while [ $# -gt 0 ]; do
 
   --mail) shift; mail=$1 ;;
   
-  --skip-empty-pages) SKIP_EMPTY_PAGES=1 ;;
+  --skip-empty-pages) skip_empty_pages=1 ;;
 
   -o|--output) shift; output="$1" ;;
 
@@ -102,7 +103,7 @@ while [ $# -gt 0 ]; do
   shift   # next option
 done
 
-if [ $HELP -eq 1 ]; then
+if [ $help -eq 1 ]; then
   echo "$(basename $0) [OPTIONS]... [output]"
   echo ""
   echo "OPTIONS"
@@ -182,38 +183,38 @@ case "$size" in
 
   Letter) pgheightin=11; pgwidthin=8.5 ;;
 
-  Legal) PGHEIGHT=355.6; PGWIDTH=215.9 ;;
+  Legal) pgheight=355.6; pgwidth=215.9 ;;
 
-  A4) PGHEIGHT=297; PGWIDTH=210 ;;
+  A4) pgheight=297; pgwidth=210 ;;
 
 esac
 
-if [ $crop != 1 -a "$PGHEIGHT" != "" ]; then
-  pgheightin=$(units --compact -1 "$PGHEIGHT mm" 'in')
-  PGHEIGHT="-y $PGHEIGHT"
+if [ $crop != 1 -a "$pgheight" != "" ]; then
+  pgheightin=$(units --compact -1 "$pgheight mm" 'in')
+  pgheight="-y $pgheight"
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
-if [ $crop != 1 -a "$PGWIDTH" != "" ]; then
-  pgwidthin=$(units --compact -1 "$PGWIDTH mm" 'in')
-  PGWIDTH="-x $PGWIDTH"
+if [ $crop != 1 -a "$pgwidth" != "" ]; then
+  pgwidthin=$(units --compact -1 "$pgwidth mm" 'in')
+  pgwidth="-x $pgwidth"
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
 if [ $crop = 1 ]; then
   crop="--swcrop=yes"
-  PGHEIGHT=
-  PGWIDTH=
+  pgheight=
+  pgwidth=
   pgheightin=
   pgwidthin=
   PS2PDF_OPTS="-dEPSCrop"
 fi
 
-if [ $DESKEW = 1 ]; then
-  DESKEW="--swdeskew=yes"
+if [ $deskew = 1 ]; then
+  deskew="--swdeskew=yes"
 fi
 
-export VERBOSE
+export verbose
 export unpaper
 export searchable
 export language
@@ -221,9 +222,9 @@ export resolution
 export pgwidthin
 export pgheightin
 export PS2PDF_OPTS
-export SKIP_EMPTY_PAGES
+export skip_empty_pages
 
-if [ $VERBOSE = 1 ]; then
+if [ $verbose = 1 ]; then
   LOCKFILE=$(mktemp)
   trap "rm -rf $LOCKFILE" 0
   export LOCKFILE
@@ -232,11 +233,11 @@ fi;
 debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
 
 echo >&2 "Scanning..."
-args+=('-d' "$device" '--source' "$source" "$maxpage" "$PGHEIGHT" "$PGWIDTH" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$DESKEW" "$crop" -o "$tmp_dir/scan-%04d")
+args+=('-d' "$device" '--source' "$source" "$maxpage" "$pgheight" "$pgwidth" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$deskew" "$crop" -o "$tmp_dir/scan-%04d")
 
 scanadf "${args[@]}"
 
-#debug scanadf -d "$device" $source $maxpage $PGHEIGHT $PGWIDTH -S $script --script-wait --resolution $resolution $DESKEW $crop -o $tmp_dir/scan-%04d
+#debug scanadf -d "$device" $source $maxpage $pgheight $pgwidth -S $script --script-wait --resolution $resolution $deskew $crop -o $tmp_dir/scan-%04d
 
 
 
@@ -245,10 +246,10 @@ pdffiles=($tmp_dir/scan-[0-9]*.pdf)
 numscans=${#pdffiles[@]}
 if [ $numscans -gt 0 ]; then
   echo "Processing $numscans pages"
-  if [ $numscans -gt $TRUNCPAGE -a $TRUNCPAGE -gt 0 ]; then
-    for x in ${pdffiles[@]:$numscans-$TRUNCPAGE:$TRUNCPAGE}; do rm "$x"; done;
-    pdffiles=(${pdffiles[@]:0:$numscans-$TRUNCPAGE})
-    echo "Truncated $TRUNCPAGE pages"
+  if [ $numscans -gt $truncpage -a $truncpage -gt 0 ]; then
+    for x in ${pdffiles[@]:$numscans-$truncpage:$truncpage}; do rm "$x"; done;
+    pdffiles=(${pdffiles[@]:0:$numscans-$truncpage})
+    echo "Truncated $truncpage pages"
   fi
   if [ $numscans -gt 1 -a $usearray = 1 ]; then
     echo "Naming pdfs based on output list..."
