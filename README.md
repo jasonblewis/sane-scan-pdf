@@ -18,7 +18,7 @@ Tested and run regularly on Fedora, but should work on other distributions with 
 * Skip white-only pages automatically (with ImageMagick)
 * Specify page width and height for odd size pages, or common sizes (Letter, Legal, A4)
 * Performance: scanner run in parallel with page post-processing
-
+* Mail the resulting PDF to an email address. Useful for uploading to services like Evernote
 ## Requirements
 
 * bash
@@ -72,6 +72,8 @@ OPTIONS
    Run OCR to make the PDF searchable (requires tesseract)
  --skip-empty-pages
    remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)
+ --mail <recipient email-address>
+   Mail resulting PDF to recipient
 
 OUTPUT
  -o, --output <outputfile>
