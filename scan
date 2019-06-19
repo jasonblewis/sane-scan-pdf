@@ -5,7 +5,7 @@ dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # declare an array to store arguments in
 declare -a args
 
-device="brother4:bus8;dev1"
+device='fujitsu'
 output="scan-$(date --rfc-3339=seconds).pdf"
 usearray=0
 append=0
