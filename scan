@@ -1,9 +1,16 @@
 #!/bin/bash
 
-dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
+
+function error_exit {
+  echo "$1" >&2   ## Send message to stderr. Exclude >&2 if you don't want it that way.
+  exit "${2:-1}"  ## Return a code specified by $2 or 1 by default.
+}
 
 # declare an array to store arguments in
 declare -a args
+
+dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 device='fujitsu'
 output="scan-$(date --rfc-3339=seconds).pdf"
@@ -46,8 +53,7 @@ while ((++i <= 10)); do
 done
 
 if ((i > 10)); then
-  printf 'Could not create temporary directory\n' >&2
-  exit 1
+  error_exit 'Could not create temporary directory\n' 1
 fi
 
 
@@ -97,7 +103,7 @@ while [ $# -gt 0 ]; do
 
     -x|--device) shift; device=$1;;
 
-    *) if [ $usearray = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
+    *) if [ $usearray = 1 ]; then output+=("$1"); else error_exit "Unknown argument: $1" 1; fi ;;
 
   esac
   shift   # next option
@@ -153,15 +159,13 @@ if [ $help -eq 1 ]; then
 fi
 
 if [ $usearray = 0 -a -f "$output" -a ! $append = 1 ]; then
-  echo >&2 "Output file $output already exists. Delete or specify -a. Aborting."
-  exit 1
+  error_exit "Output file $output already exists. Delete or specify -a. Aborting." 1
 fi
 
 if [ $usearray = 1 -a ! $append = 1 ]; then
   for o in "${output[@]}"; do
     if [ -f "$o" ]; then
-      echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
-      exit 1
+      error_exit "Output file $o already exists. Delete or specify -a. Aborting." 1
     fi
   done
 fi
@@ -229,13 +233,6 @@ if [ $verbose = 1 ]; then
   trap "rm -rf $lockfile" 0
   export lockfile
 fi;
-
-debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
-
-function error_exit {
-  echo "$1" >&2   ## Send message to stderr. Exclude >&2 if you don't want it that way.
-  exit "${2:-1}"  ## Return a code specified by $2 or 1 by default.
-}
 
 # email a file given the filename and recipient address
 # requires mail from mailutils
