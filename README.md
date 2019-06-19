@@ -81,6 +81,11 @@ OUTPUT
    Output to named file default=scan.pdf
  -l, --outputlist <outputfile-1...outputfile-n> Output to named files for each scanned page, can be used with append
 ```
+## Customising some options
+
+You can configure some settings by copying the `sane-scan-pdf.conf.sample` file to
+`.sane-scan-pdf.conf` then edit the config file to include your defaults and valid
+email addresses.
 
 ## Author
 

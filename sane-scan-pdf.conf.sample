@@ -1,0 +1,10 @@
+# edit this file and put in your real email addresses then copy it to .sane-scan-pdf.conf
+# set up some defaults
+# duplex by default
+duplex=1
+# always make searchable
+searchable=1
+# email the documents to myself at evernote
+mail='mysecretevernoteaddress@m.evernote.com'
+# what email address should the mail come from?
+from='my@fromaddress'
