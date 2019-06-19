@@ -94,6 +94,8 @@ while [ $# -gt 0 ]; do
     --language) shift; language=$1 ;;
 
     --mail) shift; mail=$1 ;;
+
+    --from) shift; from=$1 ;;
     
     --skip-empty-pages) skip_empty_pages=1 ;;
 
@@ -149,6 +151,8 @@ if [ $help -eq 1 ]; then
   echo "   Remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)"
   echo " --mail <email-address>"
   echo "   Mail PDF to recipient"
+  echo " --from <email-address>"
+  echo "   From address to use if pdf to be mailed"
   echo ""
   echo "output"
   echo " -o, --output <outputfile>"

@@ -75,6 +75,8 @@ OPTIONS
    remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)
  --mail <recipient email-address>
    Mail resulting PDF to recipient
+ --from <email-address>
+   From address to use if pdf to be mailed
 
 OUTPUT
  -o, --output <outputfile>
