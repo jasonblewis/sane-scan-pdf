@@ -14,9 +14,9 @@ usage()
   echo "  pgwidthin"
   echo "  pgheightin"
   echo "  skip_empty_pages"
-  echo "  PS2PDF_OPTS (optional)"
+  echo "  ps2pdf_opts (optional)"
   echo "  verbose (optional)"
-  echo "  LOCKFILE (required if verbose=1)"
+  echo "  lockfile (required if verbose=1)"
 }
 
 log()
@@ -45,57 +45,57 @@ if [ "$unpaper" == "" -o "$searchable" == "" -o "$resolution" == "" -o "$resolut
   exit 1
 fi
 
-IMAGE_PATH=$1
-IMAGE_DIR=$(dirname $1)
-IMAGE_FILE=$(basename $1)
+image_path=$1
+image_dir=$(dirname $1)
+image_file=$(basename $1)
 
 process_page() {
   log ""
   log "-------------------------------------------------------------------------------"
-  log "Post-processing scanned page ${IMAGE_FILE}, deskew=$unpaper, searchable=$searchable..."
+  log "Post-processing scanned page ${image_file}, deskew=$unpaper, searchable=$searchable..."
 
   
-  [[ $skip_empty_pages -eq 1 ]] && PERCENTAGE_WHITE=$(convert "$IMAGE_PATH" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || PERCENTAGE_WHITE=0
-  log "$IMAGE_PATH has $PERCENTAGE_WHITE % white"
+  [[ $skip_empty_pages -eq 1 ]] && percentage_white=$(convert "$image_path" -fuzz 0% -negate -threshold 0 -negate -format "%[fx:100*mean]" info:) || percentage_white=0
+  log "$image_path has $percentage_white % white"
     
-  PP_PREFIX=
-  if (( $(echo "$PERCENTAGE_WHITE < 99.8" |bc -l) )); then
+  pp_prefix=
+  if (( $(echo "$percentage_white < 99.8" |bc -l) )); then
     if [ $unpaper -eq 1 ]; then
       log "Applying unpaper post-processing to image data..."
-      PP_PREFIX="unpaper-"
+      pp_prefix="unpaper-"
       if [ $verbose = 1 ]; then
         unpaperverbose="-v"
       fi
-      #unpaper $unpaperverbose --no-mask-scan --overwrite --dpi $resolution --no-blackfilter $IMAGE_FILE $PP_PREFIX$IMAGE_FILE | logstdout
-      unpaper $unpaperverbose --overwrite --dpi $resolution $IMAGE_PATH $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | logstdout
+      #unpaper $unpaperverbose --no-mask-scan --overwrite --dpi $resolution --no-blackfilter $image_file $pp_prefix$image_file | logstdout
+      unpaper $unpaperverbose --overwrite --dpi $resolution $image_path $image_dir/$pp_prefix$image_file | logstdout
     fi
     log ""
     log "-------------------------------------------------------------------------------"
     if [ $searchable -eq 1 ]; then
       log "Converting image data to searchable pdf..."
-      tesseract $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE $IMAGE_DIR/${IMAGE_FILE%.*} -l $language pdf | logstdout
+      tesseract $image_dir/$pp_prefix$image_file $image_dir/${image_file%.*} -l $language pdf | logstdout
     else
       log "Converting image data to pdf..."
-      PNMverbose=
+      pnmverbose=
       if [ $verbose = 1 ]; then
-        PNMverbose="-verbose"
+        pnmverbose="-verbose"
       fi
       if [ "$pgwidthin" == "" -o "$pgheightin" == "" ]; then
-        PAGEOPTS="-equalpixels -dpi=$resolution -noturn"
+        pageopts="-equalpixels -dpi=$resolution -noturn"
       else
-        PAGEOPTS="-imagewidth $pgwidthin -imageheight $pgheightin"
+        pageopts="-imagewidth $pgwidthin -imageheight $pgheightin"
       fi
-      log "Using page options: $PAGEOPTS"
-      pnmtops $PNMverbose $PAGEOPTS $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE | ps2pdf $PS2PDF_OPTS - > $IMAGE_DIR/${IMAGE_FILE%.*}.pdf | logstdout
+      log "Using page options: $pageopts"
+      pnmtops $pnmverbose $pageopts $image_dir/$pp_prefix$image_file | ps2pdf $ps2pdf_opts - > $image_dir/${image_file%.*}.pdf | logstdout
     fi    
   else
-    log "Skipping empty page $IMAGE_FILE with white percentage $PERCENTAGE_WHITE"
+    log "Skipping empty page $image_file with white percentage $percentage_white"
   fi
   
   status=$?
-  rm $IMAGE_PATH
-  if [ -f $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE ]; then
-    rm $IMAGE_DIR/$PP_PREFIX$IMAGE_FILE
+  rm $image_path
+  if [ -f $image_dir/$pp_prefix$image_file ]; then
+    rm $image_dir/$pp_prefix$image_file
   fi
 
   log ""
@@ -106,7 +106,7 @@ if [ $verbose = 1 ]; then
   (
     flock 200
     process_page
-  ) 200>$LOCKFILE
+  ) 200>$lockfile
 else
   process_page
 fi;
