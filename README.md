@@ -25,7 +25,8 @@ Tested and run regularly on Fedora, but should work on other distributions with 
 * pnmtops (netpbm-progs)
 * ps2pdf (ghostscript)
 * pdfunite
-* ImageMagick (if --skip-empty-pages) is used
+* ImageMagick (if --skip-empty-pages is used)
+* GNU mail from mailutils (if --mail is used)
 
 ### Optional
 

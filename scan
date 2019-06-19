@@ -32,7 +32,7 @@ skip_empty_pages=0
 # read in config file and overwrite defaults
 
 if [[ -e "$dir/.sane-scan-pdf.conf" ]]; then source "$dir/.sane-scan-pdf.conf"
-    elif [[ -e /etc/sane-scan-pdf.conf ]]; then source /etc/sane-scan-pdf.conf
+elif [[ -e /etc/sane-scan-pdf.conf ]]; then source /etc/sane-scan-pdf.conf
 fi
 
 
@@ -55,49 +55,49 @@ fi
 while [ $# -gt 0 ]; do
   case "$1" in
 
-  -v|--verbose) verbose=1 ;;
+    -v|--verbose) verbose=1 ;;
 
-  -d|--duplex) duplex=1 ;;
+    -d|--duplex) duplex=1 ;;
 
-  -m|--mode) shift; mode=$1 ;;
+    -m|--mode) shift; mode=$1 ;;
 
-  -r|--resolution) shift; resolution=$1 ;;
+    -r|--resolution) shift; resolution=$1 ;;
 
-  -a|--append) append=1 ;;
+    -a|--append) append=1 ;;
 
-  -e|--max) shift; maxpage=$1 ;;
+    -e|--max) shift; maxpage=$1 ;;
 
-  -t|--truncate) shift; truncpage=$1 ;;
+    -t|--truncate) shift; truncpage=$1 ;;
 
-  -h|--help) help=1 ;;
+    -h|--help) help=1 ;;
 
-  -s|--size) shift; size=$1 ;;
+    -s|--size) shift; size=$1 ;;
 
-  -ph|--page-height) shift; pgheight=$1 ;;
+    -ph|--page-height) shift; pgheight=$1 ;;
 
-  -pw|--page-width) shift; pgwidth=$1 ;;
+    -pw|--page-width) shift; pgwidth=$1 ;;
 
-  --crop) crop=1 ;;
+    --crop) crop=1 ;;
 
-  --deskew) deskew=1 ;;
+    --deskew) deskew=1 ;;
 
-  --unpaper) unpaper=1 ;;
+    --unpaper) unpaper=1 ;;
 
-  --searchable|--ocr) searchable=1 ;;
+    --searchable|--ocr) searchable=1 ;;
 
-  --language) shift; language=$1 ;;
+    --language) shift; language=$1 ;;
 
-  --mail) shift; mail=$1 ;;
-  
-  --skip-empty-pages) skip_empty_pages=1 ;;
+    --mail) shift; mail=$1 ;;
+    
+    --skip-empty-pages) skip_empty_pages=1 ;;
 
-  -o|--output) shift; output="$1" ;;
+    -o|--output) shift; output="$1" ;;
 
-  -l|--outputlist) shift; usearray=1; output=(); output+=("$1") ;;
+    -l|--outputlist) shift; usearray=1; output=(); output+=("$1") ;;
 
-  -x|--device) shift; device=$1;;
+    -x|--device) shift; device=$1;;
 
-  *) if [ $usearray = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
+    *) if [ $usearray = 1 ]; then output+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
 
   esac
   shift   # next option
@@ -158,12 +158,12 @@ if [ $usearray = 0 -a -f "$output" -a ! $append = 1 ]; then
 fi
 
 if [ $usearray = 1 -a ! $append = 1 ]; then
-    for o in "${output[@]}"; do
-        if [ -f "$o" ]; then
-            echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
-            exit 1
-        fi
-    done
+  for o in "${output[@]}"; do
+    if [ -f "$o" ]; then
+      echo >&2 "Output file $o already exists. Delete or specify -a. Aborting."
+      exit 1
+    fi
+  done
 fi
 
 source=""
@@ -176,7 +176,7 @@ if [ "$maxpage" != "" ]; then
   maxpage="-e $maxpage"
 fi
 
-PS2PDF_OPTS=
+ps2pdf_opts=
 
 # Specify non-letter sizes in mm
 case "$size" in
@@ -192,13 +192,13 @@ esac
 if [ $crop != 1 -a "$pgheight" != "" ]; then
   pgheightin=$(units --compact -1 "$pgheight mm" 'in')
   pgheight="-y $pgheight"
-  PS2PDF_OPTS="-dEPSCrop"
+  ps2pdf_opts="-dEPSCrop"
 fi
 
 if [ $crop != 1 -a "$pgwidth" != "" ]; then
   pgwidthin=$(units --compact -1 "$pgwidth mm" 'in')
   pgwidth="-x $pgwidth"
-  PS2PDF_OPTS="-dEPSCrop"
+  ps2pdf_opts="-dEPSCrop"
 fi
 
 if [ $crop = 1 ]; then
@@ -207,7 +207,7 @@ if [ $crop = 1 ]; then
   pgwidth=
   pgheightin=
   pgwidthin=
-  PS2PDF_OPTS="-dEPSCrop"
+  ps2pdf_opts="-dEPSCrop"
 fi
 
 if [ $deskew = 1 ]; then
@@ -221,16 +221,40 @@ export language
 export resolution
 export pgwidthin
 export pgheightin
-export PS2PDF_OPTS
+export ps2pdf_opts
 export skip_empty_pages
 
 if [ $verbose = 1 ]; then
-  LOCKFILE=$(mktemp)
-  trap "rm -rf $LOCKFILE" 0
-  export LOCKFILE
+  lockfile=$(mktemp)
+  trap "rm -rf $lockfile" 0
+  export lockfile
 fi;
 
 debug() { printf 'DEBUG: %s\n' "$*"; "$@"; }
+
+function error_exit {
+  echo "$1" >&2   ## Send message to stderr. Exclude >&2 if you don't want it that way.
+  exit "${2:-1}"  ## Return a code specified by $2 or 1 by default.
+}
+
+# email a file given the filename and recipient address
+# requires mail from mailutils
+mail_document()
+{
+  # check correct number of parameters passed in
+  if [[ $# -ne 2 ]] ; then
+    error_exit "Error: must supply filename and email address" 1
+  fi
+  # declare an array to store mail arguments in
+  declare -a mailargs
+  # check if a $from address is declared and use it. otherwise rely on user's configuration for from address
+  if [[ -z ${from+x} ]] ; then
+    mailargs+=("-aFrom:$from")
+  fi
+  echo "emailing document $output to $mail"
+  mailargs+=('-s' "scanned document from $HOSTNAME " "$mail" '-A' "$output" )
+  echo '' | mail "${mailargs[@]}"
+}
 
 echo >&2 "Scanning..."
 args+=('-d' "$device" '--source' "$source" "$maxpage" "$pgheight" "$pgwidth" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$deskew" "$crop" -o "$tmp_dir/scan-%04d")
@@ -287,18 +311,17 @@ if [ $numscans -gt 0 ]; then
     pdfunite "${pdffiles[@]}" "$output" && rm $tmp_dir/scan-[0-9]*.pdf
   else
     if [ $usearray = 1 ]; then
-        mv $tmp_dir/scan-0*.pdf "${output[0]}"
+      mv $tmp_dir/scan-0*.pdf "${output[0]}"
     else
-        mv $tmp_dir/scan-0*.pdf "$output"
+      mv $tmp_dir/scan-0*.pdf "$output"
     fi
   fi
   echo ""
+  # mail the document if $mail is set
   if ! [[ -z ${mail+x} ]] ; then
-      echo "emailing document $output to $mail"
-      echo '' | mutt -a "$output" -s "scanned document from $HOSTNAME " -- "$mail"
-      echo "mail result: $?"
+    mail_document "$output" "$mail"
   fi
   echo "Done."
 else
-    echo "Found no scans."
+  echo "Found no scans."
 fi
