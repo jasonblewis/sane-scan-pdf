@@ -13,7 +13,7 @@ declare -a args
 dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 device='fujitsu'
-output="scan-$(date --rfc-3339=seconds).pdf"
+output="scan-$(date --iso-8601=seconds).pdf"
 usearray=0
 append=0
 resolution=300
