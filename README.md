@@ -76,7 +76,7 @@ OPTIONS
  --mail <recipient email-address>
    Mail resulting PDF to recipient
  --from <email-address>
-   From address to use if pdf to be mailed
+   From address to use if PDF to be mailed
 
 OUTPUT
  -o, --output <outputfile>
