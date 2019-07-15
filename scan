@@ -249,12 +249,13 @@ mail_document()
   # declare an array to store mail arguments in
   declare -a mailargs
   # check if a $from address is declared and use it. otherwise rely on user's configuration for from address
-  if [[ -z ${from+x} ]] ; then
+  if [[ ! -z ${from+x} ]] ; then
+    echo got from address "$from"
     mailargs+=("-aFrom:$from")
   fi
   echo "emailing document $output to $mail"
   mailargs+=('-s' "scanned document from $HOSTNAME " "$mail" '-A' "$output" )
-  echo '' | mail "${mailargs[@]}"
+  echo '' | debug mail "${mailargs[@]}"
 }
 
 echo >&2 "Scanning..."
