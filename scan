@@ -258,9 +258,16 @@ mail_document()
 }
 
 echo >&2 "Scanning..."
-args+=('-d' "$device" '--source' "$source" "$maxpage" "$pgheight" "$pgwidth" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$deskew" "$crop" -o "$tmp_dir/scan-%04d")
+args+=('-d' "$device")
 
-scanadf "${args[@]}"
+
+if [[ ! -z "$source" ]] ; then
+  args+=('--source' "$source")
+fi
+  
+args+=("$maxpage" "$pgheight" "$pgwidth" '-S' "$script" '--script-wait' '--resolution' "$resolution" "$deskew" "$crop" -o "$tmp_dir/scan-%04d")
+
+debug scanadf "${args[@]}"
 
 #debug scanadf -d "$device" $source $maxpage $pgheight $pgwidth -S $script --script-wait --resolution $resolution $deskew $crop -o $tmp_dir/scan-%04d
 
