@@ -91,11 +91,13 @@ while [ $# -gt 0 ]; do
 
     --searchable|--ocr) searchable=1 ;;
 
-    --language) shift; language=$1 ;;
+    --language) shift; language="$1" ;;
 
-    --mail) shift; mail=$1 ;;
+    --mail) shift; mail="$1" ;;
 
-    --from) shift; from=$1 ;;
+    --from) shift; from="$1" ;;
+
+    --move-to) shift; moveto="$1" ;;
     
     --skip-empty-pages) skip_empty_pages=1 ;;
 
@@ -153,6 +155,8 @@ if [ $help -eq 1 ]; then
   echo "   Mail PDF to recipient"
   echo " --from <email-address>"
   echo "   From address to use if pdf to be mailed"
+  echo " --move-to <target directory>"
+  echo "   Move scan to <target directory>"
   echo ""
   echo "output"
   echo " -o, --output <outputfile>"
@@ -257,6 +261,26 @@ mail_document()
   echo '' | debug mail "${mailargs[@]}"
 }
 
+# move a file to a destination directory.
+# takes a source file name and a target directory
+move_document()
+{
+  if [[ $# -ne 2 ]] ; then
+    error_exit "Error: must sypplye file path and destination directory" 1
+  fi
+  declare -a moveargs
+  sourcefile="$1"
+  targetdir="$2"
+  if [[ ! -r "$sourcefile" ]] ; then
+    error_exit "Error: $sourcefile does not exist or cannot be read"
+  fi
+  if [[ ! -d "$targetdir" ]] ; then
+    error_exit "Error: $targetdir does not exist or is not a directory"
+  fi
+  moveargs+=('--backup=t' "$sourcefile" "$targetdir")
+  mv "${moveargs[@]}"
+}
+
 echo >&2 "Scanning..."
 args+=('-d' "$device")
 
@@ -328,6 +352,11 @@ if [ $numscans -gt 0 ]; then
   # mail the document if $mail is set
   if ! [[ -z ${mail+x} ]] ; then
     mail_document "$output" "$mail"
+  fi
+  # move the document to target folder $moveto
+  if ! [[ -z ${moveto+x} ]] ; then
+    # move the file
+    move_document "$output" "$moveto"
   fi
   echo "Done."
 else
