@@ -65,23 +65,23 @@ while [ $# -gt 0 ]; do
 
     -d|--duplex) duplex=1 ;;
 
-    -m|--mode) shift; mode=$1 ;;
+    -m|--mode) shift; mode="$1" ;;
 
-    -r|--resolution) shift; resolution=$1 ;;
+    -r|--resolution) shift; resolution="$1" ;;
 
     -a|--append) append=1 ;;
 
-    -e|--max) shift; maxpage=$1 ;;
+    -e|--max) shift; maxpage="$1" ;;
 
-    -t|--truncate) shift; truncpage=$1 ;;
+    -t|--truncate) shift; truncpage="$1" ;;
 
     -h|--help) help=1 ;;
 
-    -s|--size) shift; size=$1 ;;
+    -s|--size) shift; size="$1" ;;
 
-    -ph|--page-height) shift; pgheight=$1 ;;
+    -ph|--page-height) shift; pgheight="$1" ;;
 
-    -pw|--page-width) shift; pgwidth=$1 ;;
+    -pw|--page-width) shift; pgwidth="$1" ;;
 
     --crop) crop=1 ;;
 
@@ -105,7 +105,7 @@ while [ $# -gt 0 ]; do
 
     -l|--outputlist) shift; usearray=1; output=(); output+=("$1") ;;
 
-    -x|--device) shift; device=$1;;
+    -x|--device) shift; device="$1";;
 
     *) if [ $usearray = 1 ]; then output+=("$1"); else error_exit "Unknown argument: $1" 1; fi ;;
 
