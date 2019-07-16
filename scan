@@ -113,7 +113,7 @@ while [ $# -gt 0 ]; do
   shift   # next option
 done
 
-if [ $help -eq 1 ]; then
+if [[ $help -eq 1 ]]; then
   echo "$(basename $0) [OPTIONS]... [output]"
   echo ""
   echo "OPTIONS"
@@ -166,11 +166,11 @@ if [ $help -eq 1 ]; then
   exit 0
 fi
 
-if [ $usearray = 0 -a -f "$output" -a ! $append = 1 ]; then
+if [[ $usearray -eq 0 && -f "$output" && ! $append = 1 ]]; then
   error_exit "Output file $output already exists. Delete or specify -a. Aborting." 1
 fi
 
-if [ $usearray = 1 -a ! $append = 1 ]; then
+if [[ $usearray = 1 && ! $append = 1 ]]; then
   for o in "${output[@]}"; do
     if [ -f "$o" ]; then
       error_exit "Output file $o already exists. Delete or specify -a. Aborting." 1
@@ -179,12 +179,12 @@ if [ $usearray = 1 -a ! $append = 1 ]; then
 fi
 
 source=""
-if [ $duplex -eq 1 ]; then
+if [[ $duplex -eq 1 ]]; then
   source='Automatic Document Feeder(centrally aligned,Duplex)'
 
 fi
 
-if [ "$maxpage" != "" ]; then
+if [[ "$maxpage" != "" ]]; then
   maxpage="-e $maxpage"
 fi
 
@@ -201,19 +201,19 @@ case "$size" in
 
 esac
 
-if [ $crop != 1 -a "$pgheight" != "" ]; then
+if [[ $crop != 1 && "$pgheight" != "" ]]; then
   pgheightin=$(units --compact -1 "$pgheight mm" 'in')
   pgheight="-y $pgheight"
   ps2pdf_opts="-dEPSCrop"
 fi
 
-if [ $crop != 1 -a "$pgwidth" != "" ]; then
+if [[ $crop != 1 && "$pgwidth" != "" ]]; then
   pgwidthin=$(units --compact -1 "$pgwidth mm" 'in')
   pgwidth="-x $pgwidth"
   ps2pdf_opts="-dEPSCrop"
 fi
 
-if [ $crop = 1 ]; then
+if [[ $crop = 1 ]]; then
   crop="--swcrop=yes"
   pgheight=
   pgwidth=
@@ -222,7 +222,7 @@ if [ $crop = 1 ]; then
   ps2pdf_opts="-dEPSCrop"
 fi
 
-if [ $deskew = 1 ]; then
+if [[ $deskew = 1 ]]; then
   deskew="--swdeskew=yes"
 fi
 
@@ -236,7 +236,7 @@ export pgheightin
 export ps2pdf_opts
 export skip_empty_pages
 
-if [ $verbose = 1 ]; then
+if [[ $verbose = 1 ]]; then
   lockfile=$(mktemp)
   trap "rm -rf $lockfile" 0
   export lockfile
@@ -300,24 +300,24 @@ debug scanadf "${args[@]}"
 shopt -s extglob nullglob
 pdffiles=($tmp_dir/scan-[0-9]*.pdf)
 numscans=${#pdffiles[@]}
-if [ $numscans -gt 0 ]; then
+if [[ $numscans -gt 0 ]]; then
   echo "Processing $numscans pages"
-  if [ $numscans -gt $truncpage -a $truncpage -gt 0 ]; then
+  if [[ $numscans -gt $truncpage && $truncpage -gt 0 ]]; then
     for x in ${pdffiles[@]:$numscans-$truncpage:$truncpage}; do rm "$x"; done;
     pdffiles=(${pdffiles[@]:0:$numscans-$truncpage})
     echo "Truncated $truncpage pages"
   fi
-  if [ $numscans -gt 1 -a $usearray = 1 ]; then
+  if [[ $numscans -gt 1 && $usearray = 1 ]]; then
     echo "Naming pdfs based on output list..."
     output_count=${#output[@]}
     index=0
-    while [ "$index" -lt "$output_count" ]; do
+    while [[ "$index" -lt "$output_count" ]]; do
       let "scanno = $index + 1"
-      if [ -f "${output[$index]}" ]; then
+      if [[ -f "${output[$index]}" ]]; then
         mv "${output[$index]}" "${output[$index]}.orig"
-        if [ $append -eq 1 ]; then
+        if [[ $append -eq 1 ]]; then
           pdffiles=()
-          if [ -f "${output[$index]}.orig" ]; then
+          if [[ -f "${output[$index]}.orig" ]]; then
             pdffiles+=("${output[$index]}.orig")
           fi
           pdffiles+=($tmp_dir/scan-*(0)$scanno.pdf)
@@ -330,19 +330,19 @@ if [ $numscans -gt 0 ]; then
       fi
       let "index = $index + 1"
     done
-  elif [ $numscans -gt 1 -o $append -eq 1 ]; then
+  elif [[ $numscans -gt 1 || $append -eq 1 ]]; then
     echo "Concatenating pdfs..."
-    if [ -f "$output" ]; then
+    if [[ -f "$output" ]]; then
       mv "$output" "${output}.orig"
     fi
     pdffiles=()
-    if [ -f "${output}.orig" ]; then
+    if [[ -f "${output}.orig" ]]; then
       pdffiles+=("${output}.orig")
     fi
     pdffiles+=($tmp_dir/scan-[0-9]*.pdf)
     pdfunite "${pdffiles[@]}" "$output" && rm $tmp_dir/scan-[0-9]*.pdf
   else
-    if [ $usearray = 1 ]; then
+    if [[ $usearray = 1 ]]; then
       mv $tmp_dir/scan-0*.pdf "${output[0]}"
     else
       mv $tmp_dir/scan-0*.pdf "$output"
