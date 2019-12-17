@@ -250,6 +250,8 @@ mail_document()
   if [[ $# -ne 2 ]] ; then
     error_exit "Error: must supply filename and email address" 1
   fi
+  documentfile="$1"
+  toaddress="$2"
   # declare an array to store mail arguments in
   declare -a mailargs
   # check if a $from address is declared and use it. otherwise rely on user's configuration for from address
@@ -257,7 +259,7 @@ mail_document()
     mailargs+=("-aFrom:$from")
   fi
   echo "emailing document $output to $mail"
-  mailargs+=('-s' "scanned document from $HOSTNAME " "$mail" '-A' "$output" )
+  mailargs+=('-s' "scanned document from $HOSTNAME " "$toaddress" '-A' "$documentfile" )
   echo '' | debug mail "${mailargs[@]}"
 }
 
@@ -266,7 +268,7 @@ mail_document()
 move_document()
 {
   if [[ $# -ne 2 ]] ; then
-    error_exit "Error: must sypplye file path and destination directory" 1
+    error_exit "Error: must supply file path and destination directory" 1
   fi
   declare -a moveargs
   sourcefile="$1"
